@@ -1,55 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JsSIP Web Client</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jssip/3.10.0/jssip.min.js"></script>
+    <title>SIP-клиент на JsSIP</title>
 </head>
 <body>
-    <h2>JsSIP Web Client</h2>
-    <button onclick="startCall()">Call</button>
+    <h1>Простой SIP-клиент</h1>
+    <button id="callButton">Позвонить</button>
 
-    <script>
-        function initializeJsSIP() {
-            console.log("Initializing JsSIP...");
+    <script type="module">
+        import { makeCall } from './sip-client.js';
 
-            const socket = new JsSIP.WebSocketInterface('wss://147.45.157.8:7443');
-            const configuration = {
-                sockets: [socket],
-                uri: 'sip:205@147.45.157.8',
-                password: '',
-                display_name: "Web Client",
-                register: true
-            };
-
-            window.ua = new JsSIP.UA(configuration);
-            ua.start();
-        }
-
-        function startCall() {
-            if (!window.ua) {
-                console.error("JsSIP is not initialized. Call `initializeJsSIP()` first!");
-                return;
+        document.getElementById('callButton').addEventListener('click', () => {
+            const destination = prompt('Введите SIP-адрес (например, sip:user@example.com):');
+            if (destination) {
+                makeCall(destination);
             }
-
-            const eventHandlers = {
-                progress: () => console.log('Call is in progress'),
-                failed: (e) => console.log('Call failed', e),
-                confirmed: () => console.log('Call confirmed'),
-                ended: () => console.log('Call ended'),
-            };
-
-            const options = {
-                eventHandlers,
-                mediaConstraints: { audio: true, video: false }
-            };
-
-            ua.call('sip:206@147.45.157.8', options);
-        }
-
-        // Запуск JsSIP при загрузке страницы
-        window.onload = initializeJsSIP;
+        });
     </script>
 </body>
 </html>
