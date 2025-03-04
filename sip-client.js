@@ -1,9 +1,9 @@
 // Подключение JsSIP из CDN (если импорт из npm не подходит)
-const socket = new JsSIP.WebSocketInterface('wss://your-sip-server.com:7443'); // Замени на свой сервер
+const socket = new JsSIP.WebSocketInterface('wss://147.45.157.8:7443'); // Замени на свой сервер
 const configuration = {
   sockets: [socket],
-  uri: 'sip:your_username@your-sip-server.com',
-  password: 'your_password',
+  uri: 'sip:205@147.45.157.8',
+  password: '205',
 };
 
 const userAgent = new JsSIP.UA(configuration);
