@@ -3,21 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIP-клиент на JsSIP</title>
+    <title>JsSIP SIP-клиент</title>
 </head>
 <body>
-    <h1>Простой SIP-клиент</h1>
+    <h1>Простой SIP-клиент на GitHub Pages</h1>
     <button id="callButton">Позвонить</button>
 
-    <script type="module">
-        import { makeCall } from './sip-client.js';
-
-        document.getElementById('callButton').addEventListener('click', () => {
-            const destination = prompt('Введите SIP-адрес (например, sip:user@example.com):');
-            if (destination) {
-                makeCall(destination);
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jssip@latest"></script>
+    <script src="sip-client.js"></script>
 </body>
 </html>
