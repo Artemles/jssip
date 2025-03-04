@@ -1,3 +1,5 @@
+
+
 // Подключение JsSIP из CDN (если импорт из npm не подходит)
 const socket = new JsSIP.WebSocketInterface('wss://147.45.157.8:7443'); // Замени на свой сервер
 const configuration = {
