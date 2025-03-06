@@ -16,7 +16,7 @@
     <script>
         // Функция для создания WebSocket подключения и обработки событий
         function createWebSocketConnection(port, statusElementId) {
-            const socket = new WebSocket(`ws://147.45.157.8:${port}`); // Указываем порт для подключения
+            const socket = new WebSocket(`wss://147.45.157.8:${port}`); // Указываем порт для подключения
 
             socket.onopen = function() {
                 document.getElementById(statusElementId).innerText = `Соединение установлено на порт ${port}`;
