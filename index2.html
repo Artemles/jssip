@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+
+    <!-- Статус для каждого подключения -->
+    <div id="status1">Подключение к серверу 1...</div>
+    <div id="status2">Подключение к серверу 2...</div>
+    <div id="status3">Подключение к серверу 3...</div>
+
+    <script>
+        // Функция для создания WebSocket подключения и обработки событий
+        function createWebSocketConnection(url, statusElementId) {
+            const socket = new WebSocket(url); // Указываем URL для подключения
+
+            socket.onopen = function() {
+                document.getElementById(statusElementId).innerText = `Соединение установлено с ${url}`;
+                console.log(`Соединение установлено с ${url}`);
+                socket.send(`Привет, сервер! ${url}`); // Отправляем сообщение на сервер
+            };
+
+            socket.onmessage = function(event) {
+                console.log(`Сообщение от сервера (${url}):`, event.data);
+            };
+
+            socket.onerror = function(error) {
+                console.log(`Ошибка WebSocket с сервером ${url}:`, error);
+                document.getElementById(statusElementId).innerText = `Ошибка соединения с ${url}`;
+            };
+
+            socket.onclose = function() {
+                document.getElementById(statusElementId).innerText = `Соединение закрыто с ${url}`;
+                console.log(`Соединение закрыто с ${url}`);
+            };
+        }
+
+        // Тестирование нескольких серверов
+        createWebSocketConnection('wss://echo.websocket.org', 'status1'); // Echo Test Server
+        createWebSocketConnection('wss://demos.kaazing.com/echo', 'status2'); // Kaazing Test Server
+        createWebSocketConnection('ws://clientstreaming.com', 'status3'); // Unsecured WebSocket
+    </script>
+</body>
+</html>
