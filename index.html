@@ -1,16 +1,48 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JsSIP SIP-клиент</title>
+    <title>WebSocket Test</title>
 </head>
 <body>
-    <h1>Простой SIP-клиент на GitHub Pages</h1>
-    <button id="callButton">Позвонить</button>
+    <h1>WebSocket Test</h1>
 
-    <!-- Подключаем JsSIP из CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/jssip@latest"></script>
-    <script src="sip-client.js"></script>
+    <!-- Статус для каждого подключения -->
+    <div id="status1">Подключение к порту 7443...</div>
+    <div id="status2">Подключение к порту 5066...</div>
+    <div id="status3">Подключение к порту 5070...</div>
+
+    <script>
+        // Функция для создания WebSocket подключения и обработки событий
+        function createWebSocketConnection(port, statusElementId) {
+            const socket = new WebSocket(`ws://147.45.157.8:${port}`); // Указываем порт для подключения
+
+            socket.onopen = function() {
+                document.getElementById(statusElementId).innerText = `Соединение установлено на порт ${port}`;
+                console.log(`Соединение установлено на порт ${port}`);
+                socket.send(`Привет, сервер! Порт ${port}`); // Отправляем сообщение на сервер
+            };
+
+            socket.onmessage = function(event) {
+                console.log(`Сообщение от сервера на порт ${port}:`, event.data);
+            };
+
+            socket.onerror = function(error) {
+                console.log(`Ошибка WebSocket на порт ${port}:`, error);
+                document.getElementById(statusElementId).innerText = `Ошибка соединения на порт ${port}`;
+            };
+
+            socket.onclose = function() {
+                document.getElementById(statusElementId).innerText = `Соединение закрыто на порт ${port}`;
+                console.log(`Соединение закрыто на порт ${port}`);
+            };
+        }
+
+        // Создание подключений для разных портов
+        createWebSocketConnection(7443, 'status1');
+        createWebSocketConnection(5066, 'status2');
+        createWebSocketConnection(5070, 'status3');
+    </script>
 </body>
 </html>
