@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подключение к SIP</title>
+    <script src="jssip.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
+        button, select, input { padding: 10px; font-size: 16px; margin: 10px; }
+        input { width: 250px; }
+    </style>
+</head>
+<body>
+
+    <h1>Подключение к SIP</h1>
+    <button onclick="connectSIP()">Подключиться</button>
+    
+    <h2>Выберите, кому звонить:</h2>
+    <select id="sipList" onchange="updateCustomInput()">
+        <option value="sip:201@147.45.157.8">Оператор 201</option>
+        <option value="sip:202@147.45.157.8">Оператор 202</option>
+        <option value="custom">Другой SIP-адрес...</option>
+    </select>
+    <input type="text" id="customSip" placeholder="Введите SIP-адрес" style="display:none;">
+    <br>
+
+    <button onclick="makeCall()">Позвонить</button>
+    <button onclick="hangupCall()">Завершить звонок</button>
+
+    <div id="log"></div>
+
+    <script>
+        let ua, session;
+
+        function logMessage(msg) {
+            document.getElementById("log").innerText += msg + "\n";
+        }
+
+        function connectSIP() {
+            logMessage("🔄 Подключение к SIP...");
+            try {
+                const socket = new JsSIP.WebSocketInterface("wss://147.45.157.8:8443");
+                ua = new JsSIP.UA({
+                    sockets: [socket],
+                    uri: "sip:202@147.45.157.8",
+                    password: "202",
+                    registrar_server: "sip:147.45.157.8",
+                    display_name: "SIP User 202",
+                    session_timers: false
+                });
+
+                ua.on("registered", () => logMessage("✅ Подключено!"));
+                ua.on("registrationFailed", (e) => logMessage(`❌ Ошибка: ${e.cause}`));
+                ua.on("newRTCSession", (data) => handleIncomingCall(data.session));
+
+                ua.start();
+            } catch (error) {
+                logMessage(`❌ Ошибка: ${error}`);
+            }
+        }
+
+        function handleIncomingCall(call) {
+            session = call;
+            logMessage("📞 Входящий звонок...");
+            session.on("accepted", () => logMessage("✅ Звонок принят"));
+            session.on("ended", () => logMessage("❌ Звонок завершен"));
+            session.on("failed", (e) => logMessage(`❌ Ошибка: ${e.cause}`));
+        }
+
+        function updateCustomInput() {
+            document.getElementById("customSip").style.display = (document.getElementById("sipList").value === "custom") ? "inline" : "none";
+        }
+
+        function makeCall() {
+            if (!ua) return logMessage("❌ Не подключено!");
+
+            let target = document.getElementById("sipList").value;
+            if (target === "custom") {
+                target = document.getElementById("customSip").value.trim();
+                if (!target) return logMessage("❌ Введите SIP-адрес!");
+            }
+
+            logMessage(`📞 Звоним на: ${target}`);
+            session = ua.call(target, {
+                mediaConstraints: { audio: true, video: false },
+                pcConfig: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] },
+                eventHandlers: { sdp: modifySDP }
+            });
+
+            session.on("progress", () => logMessage("⏳ Звонок в процессе..."));
+            session.on("confirmed", () => logMessage("✅ Звонок установлен"));
+            session.on("ended", () => logMessage("❌ Звонок завершен"));
+            session.on("failed", (e) => logMessage(`❌ Ошибка: ${e.cause}`));
+        }
+
+        function modifySDP(e) {
+            console.log("🔧 Оригинальный SDP:\n", e.sdp);
+
+            // Удаляем ненужные кодеки (оставляем только G711 - PCMU (0) и PCMA (8))
+            e.sdp = e.sdp.replace(/a=rtpmap:\d+ (?!PCMU|PCMA).*?\r\n/g, "");
+
+            // Меняем формат RTP, если требуется
+            if (!e.sdp.includes("RTP/AVP")) {
+                e.sdp = e.sdp.replace(/UDP\/TLS\/RTP\/SAVPF/g, "RTP/AVP");
+            }
+
+            console.log("🎛️ Модифицированный SDP:\n", e.sdp);
+        }
+
+        function hangupCall() {
+            if (session) {
+                session.terminate();
+                logMessage("📴 Звонок завершен.");
+            } else {
+                logMessage("❌ Нет активного звонка.");
+            }
+        }
+    </script>
+
+</body>
+</html>
