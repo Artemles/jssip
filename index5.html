@@ -11,15 +11,23 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
-        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+        button, input { padding: 10px; font-size: 16px; margin: 10px; }
+        input { width: 300px; }
     </style>
 </head>
 <body>
 
     <h1>Подключение к SIP</h1>
+    
+    <!-- Поле ввода для SIP-номера -->
+    <input type="text" id="sipTarget" placeholder="Введите SIP-адрес (например, sip:201@147.45.157.8)">
+    
+    <br>
+    
     <button onclick="connectSIP()">Подключиться</button>
     <button onclick="makeCall()">Позвонить</button>
     <button onclick="hangupCall()">Завершить звонок</button>
+
     <div id="log"></div>
 
     <script>
@@ -63,7 +71,13 @@
                 return;
             }
 
-            const target = "sip:201@147.45.157.8"; // Кому звоним
+            // Получаем SIP-адрес из поля ввода
+            const target = document.getElementById("sipTarget").value.trim();
+            if (!target) {
+                logMessage("❌ Введите SIP-адрес перед вызовом!");
+                return;
+            }
+
             const options = {
                 mediaConstraints: { audio: true, video: false },
                 eventHandlers: {
