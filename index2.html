@@ -1,94 +1,48 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проверка WebSocket и SIP</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
-        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
-    </style>
+    <title>WebSocket Test</title>
 </head>
 <body>
+    <h1>WebSocket Test</h1>
 
-    <h1>Проверка WebSocket и SIP</h1>
-    <button onclick="checkWebSocket()">Проверить WebSocket</button>
-    <button onclick="checkSipWebSocket()">Проверить SIP WebRTC</button>
-    <button onclick="createWebSocketConnection('wss://echo.websocket.org', 'status1')">Контрольный WebSocket</button>
-    
-    <div id="log"></div>
+    <!-- Статус для каждого подключения -->
+    <div id="status1">Подключение к серверу 1...</div>
+    <div id="status2">Подключение к серверу 2...</div>
+    <div id="status3">Подключение к серверу 3...</div>
 
     <script>
-        function logMessage(message) {
-            document.getElementById("log").innerText += message + "\n";
+        // Функция для создания WebSocket подключения и обработки событий
+        function createWebSocketConnection(url, statusElementId) {
+            const socket = new WebSocket(url); // Указываем URL для подключения
+
+            socket.onopen = function() {
+                document.getElementById(statusElementId).innerText = `Соединение установлено с ${url}`;
+                console.log(`Соединение установлено с ${url}`);
+                socket.send(`Привет, сервер! ${url}`); // Отправляем сообщение на сервер
+            };
+
+            socket.onmessage = function(event) {
+                console.log(`Сообщение от сервера (${url}):`, event.data);
+            };
+
+            socket.onerror = function(error) {
+                console.log(`Ошибка WebSocket с сервером ${url}:`, error);
+                document.getElementById(statusElementId).innerText = `Ошибка соединения с ${url}`;
+            };
+
+            socket.onclose = function() {
+                document.getElementById(statusElementId).innerText = `Соединение закрыто с ${url}`;
+                console.log(`Соединение закрыто с ${url}`);
+            };
         }
 
-        async function checkWebSocket() {
-            const websocketUrl = "wss://iqtdemo.duckdns.org:8443";
-            logMessage(`🔄 Проверка WebSocket: ${websocketUrl}`);
-
-            try {
-                const ws = new WebSocket(websocketUrl);
-                ws.onopen = () => {
-                    logMessage(`✅ WebSocket доступен: ${websocketUrl}`);
-                    ws.close();
-                };
-                ws.onerror = () => {
-                    logMessage(`❌ WebSocket недоступен: ${websocketUrl}`);
-                };
-            } catch (error) {
-                logMessage(`❌ Ошибка WebSocket: ${error}`);
-            }
-        }
-
-        function checkSipWebSocket() {
-            const sipWebSocketUrl = "wss://147.45.157.8:5061";  // Примерный SIP WebSocket
-            logMessage(`🔄 Проверка SIP WebRTC: ${sipWebSocketUrl}`);
-
-            if (!window.RTCPeerConnection) {
-                logMessage("❌ WebRTC не поддерживается в этом браузере.");
-                return;
-            }
-
-            try {
-                const peerConnection = new RTCPeerConnection({ iceServers: [{ urls: sipWebSocketUrl }] });
-                peerConnection.createDataChannel("test");
-
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        logMessage(`✅ SIP WebSocket доступен: ${sipWebSocketUrl}`);
-                    } else {
-                        logMessage(`❌ SIP WebSocket недоступен: ${sipWebSocketUrl}`);
-                    }
-                };
-
-                peerConnection.createOffer().then(offer => {
-                    peerConnection.setLocalDescription(offer);
-                });
-
-            } catch (error) {
-                logMessage(`❌ Ошибка проверки SIP WebSocket: ${error}`);
-            }
-        }
-
-        function createWebSocketConnection(url, statusId) {
-            logMessage(`🔄 Контрольная проверка WebSocket: ${url}`);
-
-            try {
-                const ws = new WebSocket(url);
-                ws.onopen = () => {
-                    logMessage(`✅ Контрольный WebSocket доступен: ${url}`);
-                    ws.close();
-                };
-                ws.onerror = () => {
-                    logMessage(`❌ Контрольный WebSocket недоступен: ${url}`);
-                };
-            } catch (error) {
-                logMessage(`❌ Ошибка контрольного WebSocket: ${error}`);
-            }
-        }
+        // Тестирование нескольких серверов
+        createWebSocketConnection('wss://echo.websocket.org', 'status1'); // Echo Test Server
+        createWebSocketConnection('wss://demos.kaazing.com/echo', 'status2'); // Kaazing Test Server
+        createWebSocketConnection('ws://clientstreaming.com', 'status3'); // Unsecured WebSocket
     </script>
-
 </body>
 </html>
