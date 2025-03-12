@@ -4,27 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Подключение к SIP</title>
-
-    <!-- Подключаем локальный JsSIP -->
+    
+    <!-- Подключаем JsSIP -->
     <script src="jssip.min.js"></script>
 
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
-        button, input { padding: 10px; font-size: 16px; margin: 10px; }
-        input { width: 300px; }
+        button, select, input { padding: 10px; font-size: 16px; margin: 10px; }
+        input { width: 250px; }
     </style>
 </head>
 <body>
 
     <h1>Подключение к SIP</h1>
-    
-    <!-- Поле ввода для SIP-номера -->
-    <input type="text" id="sipTarget" placeholder="Введите SIP-адрес (например, sip:201@147.45.157.8)">
-    
-    <br>
-    
+
     <button onclick="connectSIP()">Подключиться</button>
+    
+    <h2>Выберите, кому звонить:</h2>
+    <select id="sipList" onchange="updateCustomInput()">
+        <option value="sip:201@147.45.157.8">Оператор 201</option>
+        <option value="sip:202@147.45.157.8">Оператор 202</option>
+        <option value="custom">Другой SIP-адрес...</option>
+    </select>
+
+    <!-- Поле для ввода кастомного SIP-адреса -->
+    <input type="text" id="customSip" placeholder="Введите SIP-адрес" style="display:none;">
+
+    <br>
+
     <button onclick="makeCall()">Позвонить</button>
     <button onclick="hangupCall()">Завершить звонок</button>
 
@@ -54,14 +62,31 @@
 
                 ua = new JsSIP.UA(configuration);
 
-                ua.on("connected", () => logMessage("✅ WebSocket подключен"));
-                ua.on("disconnected", () => logMessage("❌ WebSocket отключен"));
-                ua.on("registered", () => logMessage("✅ SIP зарегистрирован"));
+                ua.on("registered", () => logMessage("✅ Успешно зарегистрирован в SIP"));
                 ua.on("registrationFailed", (event) => logMessage(`❌ Ошибка регистрации: ${event.cause}`));
+                ua.on("newRTCSession", (data) => {
+                    session = data.session;
+                    logMessage("📞 Входящий звонок...");
+
+                    session.on("accepted", () => logMessage("✅ Звонок принят"));
+                    session.on("ended", () => logMessage("❌ Звонок завершен"));
+                    session.on("failed", (e) => logMessage(`❌ Ошибка звонка: ${e.cause}`));
+                });
 
                 ua.start();
             } catch (error) {
                 logMessage(`❌ Ошибка подключения: ${error}`);
+            }
+        }
+
+        function updateCustomInput() {
+            const sipList = document.getElementById("sipList");
+            const customSip = document.getElementById("customSip");
+            
+            if (sipList.value === "custom") {
+                customSip.style.display = "inline";
+            } else {
+                customSip.style.display = "none";
             }
         }
 
@@ -71,12 +96,17 @@
                 return;
             }
 
-            // Получаем SIP-адрес из поля ввода
-            const target = document.getElementById("sipTarget").value.trim();
-            if (!target) {
-                logMessage("❌ Введите SIP-адрес перед вызовом!");
-                return;
+            // Получаем SIP-адрес из списка или пользовательского ввода
+            let target = document.getElementById("sipList").value;
+            if (target === "custom") {
+                target = document.getElementById("customSip").value.trim();
+                if (!target) {
+                    logMessage("❌ Введите SIP-адрес перед вызовом!");
+                    return;
+                }
             }
+
+            logMessage(`📞 Звоним на: ${target}`);
 
             const options = {
                 mediaConstraints: { audio: true, video: false },
@@ -126,10 +156,6 @@
                 logMessage("❌ Нет активного звонка.");
             }
         }
-
-        // Включаем отладку JsSIP
-        JsSIP.debug.enable("JsSIP:*");
-
     </script>
 
 </body>
