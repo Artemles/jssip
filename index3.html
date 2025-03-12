@@ -1,50 +1,75 @@
-async function checkWebSocket(url) {
-    try {
-        const ws = new WebSocket(url);
-        
-        ws.onopen = () => {
-            console.log(`✅ WebSocket доступен: ${url}`);
-            ws.close();
-        };
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка WebSocket и SIP</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
 
-        ws.onerror = (error) => {
-            console.log(`❌ WebSocket недоступен: ${url}`, error);
-        };
-    } catch (error) {
-        console.log(`❌ Ошибка подключения к WebSocket: ${url}`, error);
-    }
-}
+    <h1>Проверка WebSocket и SIP</h1>
+    <button onclick="checkWebSocket()">Проверить WebSocket</button>
+    <button onclick="checkSipWebSocket()">Проверить SIP WebRTC</button>
+    <div id="log"></div>
 
-function checkSipWebSocket(sipServer) {
-    if (!window.RTCPeerConnection) {
-        console.log("❌ WebRTC не поддерживается в этом браузере.");
-        return;
-    }
+    <script>
+        function logMessage(message) {
+            document.getElementById("log").innerText += message + "\n";
+        }
 
-    try {
-        const peerConnection = new RTCPeerConnection({ iceServers: [{ urls: sipServer }] });
-        peerConnection.createDataChannel("test");
+        async function checkWebSocket() {
+            const websocketUrl = "wss://iqtdemo.duckdns.org:8443";
+            logMessage(`🔄 Проверка WebSocket: ${websocketUrl}`);
 
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log(`✅ SIP WebSocket (${sipServer}) доступен`);
-            } else {
-                console.log(`❌ SIP WebSocket (${sipServer}) недоступен`);
+            try {
+                const ws = new WebSocket(websocketUrl);
+                ws.onopen = () => {
+                    logMessage(`✅ WebSocket доступен: ${websocketUrl}`);
+                    ws.close();
+                };
+                ws.onerror = (error) => {
+                    logMessage(`❌ WebSocket недоступен: ${websocketUrl}`);
+                };
+            } catch (error) {
+                logMessage(`❌ Ошибка WebSocket: ${error}`);
             }
-        };
+        }
 
-        peerConnection.createOffer().then(offer => {
-            peerConnection.setLocalDescription(offer);
-        });
+        function checkSipWebSocket() {
+            const sipWebSocketUrl = "wss://147.45.157.8:5061";  // Примерный SIP WebSocket
+            logMessage(`🔄 Проверка SIP WebRTC: ${sipWebSocketUrl}`);
 
-    } catch (error) {
-        console.log(`❌ Ошибка проверки SIP WebSocket: ${sipServer}`, error);
-    }
-}
+            if (!window.RTCPeerConnection) {
+                logMessage("❌ WebRTC не поддерживается в этом браузере.");
+                return;
+            }
 
-// 🔹 Запуск проверок
-const websocketUrl = "wss://iqtdemo.duckdns.org:8443";
-const sipWebSocketUrl = "wss://147.45.157.8:5061";  // Примерный URL для SIP-сервера
+            try {
+                const peerConnection = new RTCPeerConnection({ iceServers: [{ urls: sipWebSocketUrl }] });
+                peerConnection.createDataChannel("test");
 
-checkWebSocket(websocketUrl);
-checkSipWebSocket(sipWebSocketUrl);
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        logMessage(`✅ SIP WebSocket доступен: ${sipWebSocketUrl}`);
+                    } else {
+                        logMessage(`❌ SIP WebSocket недоступен: ${sipWebSocketUrl}`);
+                    }
+                };
+
+                peerConnection.createOffer().then(offer => {
+                    peerConnection.setLocalDescription(offer);
+                });
+
+            } catch (error) {
+                logMessage(`❌ Ошибка проверки SIP WebSocket: ${error}`);
+            }
+        }
+    </script>
+
+</body>
+</html>
