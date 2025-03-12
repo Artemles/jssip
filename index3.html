@@ -1,0 +1,50 @@
+async function checkWebSocket(url) {
+    try {
+        const ws = new WebSocket(url);
+        
+        ws.onopen = () => {
+            console.log(`✅ WebSocket доступен: ${url}`);
+            ws.close();
+        };
+
+        ws.onerror = (error) => {
+            console.log(`❌ WebSocket недоступен: ${url}`, error);
+        };
+    } catch (error) {
+        console.log(`❌ Ошибка подключения к WebSocket: ${url}`, error);
+    }
+}
+
+function checkSipWebSocket(sipServer) {
+    if (!window.RTCPeerConnection) {
+        console.log("❌ WebRTC не поддерживается в этом браузере.");
+        return;
+    }
+
+    try {
+        const peerConnection = new RTCPeerConnection({ iceServers: [{ urls: sipServer }] });
+        peerConnection.createDataChannel("test");
+
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log(`✅ SIP WebSocket (${sipServer}) доступен`);
+            } else {
+                console.log(`❌ SIP WebSocket (${sipServer}) недоступен`);
+            }
+        };
+
+        peerConnection.createOffer().then(offer => {
+            peerConnection.setLocalDescription(offer);
+        });
+
+    } catch (error) {
+        console.log(`❌ Ошибка проверки SIP WebSocket: ${sipServer}`, error);
+    }
+}
+
+// 🔹 Запуск проверок
+const websocketUrl = "wss://iqtdemo.duckdns.org:8443";
+const sipWebSocketUrl = "wss://147.45.157.8:5061";  // Примерный URL для SIP-сервера
+
+checkWebSocket(websocketUrl);
+checkSipWebSocket(sipWebSocketUrl);
