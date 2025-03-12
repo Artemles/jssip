@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подключение к SIP</title>
+
+    <!-- Подключаем локальный JsSIP -->
+    <script src="jssip.min.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Подключение к SIP</h1>
+    <button onclick="connectSIP()">Подключиться</button>
+    <button onclick="makeCall()">Позвонить</button>
+    <button onclick="hangupCall()">Завершить звонок</button>
+    <div id="log"></div>
+
+    <script>
+        let ua;  // Объект SIP User Agent
+        let session;  // Активный SIP-звонок
+
+        function logMessage(message) {
+            document.getElementById("log").innerText += message + "\n";
+        }
+
+        function connectSIP() {
+            logMessage("🔄 Подключение к SIP через WebSocket...");
+
+            try {
+                const socket = new JsSIP.WebSocketInterface("wss://147.45.157.8:8443");
+                const configuration = {
+                    sockets: [socket],
+                    uri: "sip:202@147.45.157.8",
+                    password: "202",  // Пароль SIP-аккаунта
+                    registrar_server: "sip:147.45.157.8",
+                    display_name: "SIP User 202",
+                    session_timers: false,
+                };
+
+                ua = new JsSIP.UA(configuration);
+
+                ua.on("connected", () => logMessage("✅ WebSocket подключен"));
+                ua.on("disconnected", () => logMessage("❌ WebSocket отключен"));
+                ua.on("registered", () => logMessage("✅ SIP зарегистрирован"));
+                ua.on("registrationFailed", (event) => logMessage(`❌ Ошибка регистрации: ${event.cause}`));
+
+                ua.start();
+            } catch (error) {
+                logMessage(`❌ Ошибка подключения: ${error}`);
+            }
+        }
+
+        function makeCall() {
+            if (!ua) {
+                logMessage("❌ SIP-клиент не подключен!");
+                return;
+            }
+
+            const target = "sip:201@147.45.157.8"; // Кому звоним
+            const options = {
+                mediaConstraints: { audio: true, video: false },
+                eventHandlers: {
+                    sdp: function(e) {
+                        logMessage("🔧 Оригинальный SDP:\n" + e.sdp);
+
+                        // Оставляем только нужные кодеки: PCMA (8), G722 (9), Opus (111)
+                        e.sdp = e.sdp.replace(/a=rtpmap:(?!8|9|111)\d+ .*\r\n/g, "");
+
+                        logMessage("🎛️ Модифицированный SDP:\n" + e.sdp);
+                    }
+                },
+                rtcOfferConstraints: {
+                    offerToReceiveAudio: 1,
+                    offerToReceiveVideo: 0,
+                }
+            };
+
+            session = ua.call(target, options);
+            session.on("progress", () => logMessage("⏳ Звонок в процессе..."));
+            session.on("confirmed", () => logMessage("✅ Звонок установлен"));
+            session.on("ended", () => logMessage("❌ Звонок завершен"));
+            session.on("failed", (e) => logMessage(`❌ Ошибка звонка: ${e.cause}`));
+        }
+
+        function hangupCall() {
+            if (session) {
+                session.terminate();
+                logMessage("📴 Звонок завершен вручную.");
+            } else {
+                logMessage("❌ Нет активного звонка.");
+            }
+        }
+    </script>
+
+</body>
+</html>
