@@ -68,13 +68,13 @@
                 mediaConstraints: { audio: true, video: false },
                 eventHandlers: {
                     sdp: function(e) {
-                        logMessage("🔧 Оригинальный SDP:\n" + e.sdp);
+        console.log("🔧 Оригинальный SDP:\n" + e.sdp);
 
-                        // Оставляем только нужные кодеки: PCMA (8), G722 (9), Opus (111)
-                        e.sdp = e.sdp.replace(/a=rtpmap:(?!8|9|111)\d+ .*\r\n/g, "");
+        // Удаляем только CN (comfort noise) и telephone-event, оставляя больше кодеков
+        e.sdp = e.sdp.replace(/a=rtpmap:(13|110|126) .*\r\n/g, "");
 
-                        logMessage("🎛️ Модифицированный SDP:\n" + e.sdp);
-                    }
+        console.log("🎛️ Модифицированный SDP:\n" + e.sdp);
+    }
                 },
                 rtcOfferConstraints: {
                     offerToReceiveAudio: 1,
