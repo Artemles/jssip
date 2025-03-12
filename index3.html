@@ -15,6 +15,8 @@
     <h1>Проверка WebSocket и SIP</h1>
     <button onclick="checkWebSocket()">Проверить WebSocket</button>
     <button onclick="checkSipWebSocket()">Проверить SIP WebRTC</button>
+    <button onclick="createWebSocketConnection('wss://echo.websocket.org', 'status1')">Контрольный WebSocket</button>
+    
     <div id="log"></div>
 
     <script>
@@ -32,7 +34,7 @@
                     logMessage(`✅ WebSocket доступен: ${websocketUrl}`);
                     ws.close();
                 };
-                ws.onerror = (error) => {
+                ws.onerror = () => {
                     logMessage(`❌ WebSocket недоступен: ${websocketUrl}`);
                 };
             } catch (error) {
@@ -67,6 +69,23 @@
 
             } catch (error) {
                 logMessage(`❌ Ошибка проверки SIP WebSocket: ${error}`);
+            }
+        }
+
+        function createWebSocketConnection(url, statusId) {
+            logMessage(`🔄 Контрольная проверка WebSocket: ${url}`);
+
+            try {
+                const ws = new WebSocket(url);
+                ws.onopen = () => {
+                    logMessage(`✅ Контрольный WebSocket доступен: ${url}`);
+                    ws.close();
+                };
+                ws.onerror = () => {
+                    logMessage(`❌ Контрольный WebSocket недоступен: ${url}`);
+                };
+            } catch (error) {
+                logMessage(`❌ Ошибка контрольного WebSocket: ${error}`);
             }
         }
     </script>
