@@ -67,20 +67,30 @@
             const options = {
                 mediaConstraints: { audio: true, video: false },
                 eventHandlers: {
-                    sdp: function(e) {
+    sdp: function(e) {
         console.log("🔧 Оригинальный SDP:\n" + e.sdp);
 
-        // Удаляем только CN (comfort noise) и telephone-event, оставляя больше кодеков
-        e.sdp = e.sdp.replace(/a=rtpmap:(13|110|126) .*\r\n/g, "");
+        // 🔹 1. Убираем Opus (111), если сервер не поддерживает
+        e.sdp = e.sdp.replace(/a=rtpmap:111 .*\r\n/g, "");
+
+        // 🔹 2. Принудительно ставим ptime=20
+        e.sdp = e.sdp.replace(/a=fmtp:111 minptime=10;useinbandfec=1/g, "a=fmtp:111 minptime=20;useinbandfec=1");
+
+        // 🔹 3. Проверяем, поддерживает ли сервер `UDP/TLS/RTP/SAVPF`, если нет — меняем на `RTP/AVP`
+        if (!e.sdp.includes("RTP/AVP")) {
+            e.sdp = e.sdp.replace(/UDP\/TLS\/RTP\/SAVPF/g, "RTP/AVP");
+        }
 
         console.log("🎛️ Модифицированный SDP:\n" + e.sdp);
+    },
+
+    icecandidate: function(e) {
+        if (!e.candidate) {
+            console.log("🚀 ICE candidates завершены, отправляем SDP");
+            e.complete();
+        }
     }
-                },
-                rtcOfferConstraints: {
-                    offerToReceiveAudio: 1,
-                    offerToReceiveVideo: 0,
-                }
-            };
+};
 
             session = ua.call(target, options);
             session.on("progress", () => logMessage("⏳ Звонок в процессе..."));
