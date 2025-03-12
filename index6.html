@@ -8,15 +8,17 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         #log { white-space: pre-wrap; text-align: left; margin: 20px auto; width: 80%; max-width: 600px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
-        button, select, input { padding: 10px; font-size: 16px; margin: 10px; }
-        input { width: 250px; }
+        button, select, input { padding: 10px; font-size: 16px; margin: 10px; display: block; width: 90%; max-width: 300px; margin: 10px auto; }
     </style>
 </head>
 <body>
 
-    <h1>Подключение к SIP</h1>
-    <button onclick="connectSIP()">Подключиться</button>
-    
+    <h1>Настройки SIP</h1>
+    <input type="text" id="wsServer" placeholder="WebSocket (WSS) сервер" value="wss://147.45.157.8:8443">
+    <input type="text" id="sipUri" placeholder="SIP URI (например, sip:202@147.45.157.8)" value="sip:202@147.45.157.8">
+    <input type="password" id="sipPassword" placeholder="Пароль SIP" value="202">
+    <button onclick="connectSIP()">🔄 Подключиться</button>
+
     <h2>Выберите, кому звонить:</h2>
     <select id="sipList" onchange="updateCustomInput()">
         <option value="sip:201@147.45.157.8">Оператор 201</option>
@@ -24,10 +26,9 @@
         <option value="custom">Другой SIP-адрес...</option>
     </select>
     <input type="text" id="customSip" placeholder="Введите SIP-адрес" style="display:none;">
-    <br>
-
-    <button onclick="makeCall()">Позвонить</button>
-    <button onclick="hangupCall()">Завершить звонок</button>
+    
+    <button onclick="makeCall()">📞 Позвонить</button>
+    <button onclick="hangupCall()">📴 Завершить звонок</button>
 
     <div id="log"></div>
 
@@ -39,15 +40,25 @@
         }
 
         function connectSIP() {
-            logMessage("🔄 Подключение к SIP...");
+            const wsServer = document.getElementById("wsServer").value.trim();
+            const sipUri = document.getElementById("sipUri").value.trim();
+            const sipPassword = document.getElementById("sipPassword").value.trim();
+
+            if (!wsServer || !sipUri || !sipPassword) {
+                logMessage("❌ Укажите все настройки!");
+                return;
+            }
+
+            logMessage(`🔄 Подключение к ${sipUri} через ${wsServer}...`);
+
             try {
-                const socket = new JsSIP.WebSocketInterface("wss://147.45.157.8:8443");
+                const socket = new JsSIP.WebSocketInterface(wsServer);
                 ua = new JsSIP.UA({
                     sockets: [socket],
-                    uri: "sip:202@147.45.157.8",
-                    password: "202",
-                    registrar_server: "sip:147.45.157.8",
-                    display_name: "SIP User 202",
+                    uri: sipUri,
+                    password: sipPassword,
+                    registrar_server: sipUri.split("@")[1],
+                    display_name: "SIP User",
                     session_timers: false
                 });
 
@@ -98,10 +109,10 @@
         function modifySDP(e) {
             console.log("🔧 Оригинальный SDP:\n", e.sdp);
 
-            // Удаляем ненужные кодеки (оставляем только G711 - PCMU (0) и PCMA (8))
+            // Оставляем только кодеки PCMU (0) и PCMA (8)
             e.sdp = e.sdp.replace(/a=rtpmap:\d+ (?!PCMU|PCMA).*?\r\n/g, "");
 
-            // Меняем формат RTP, если требуется
+            // Меняем RTP-формат на RTP/AVP, если требуется
             if (!e.sdp.includes("RTP/AVP")) {
                 e.sdp = e.sdp.replace(/UDP\/TLS\/RTP\/SAVPF/g, "RTP/AVP");
             }
